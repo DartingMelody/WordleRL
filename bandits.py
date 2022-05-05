@@ -75,7 +75,7 @@ def bandit_policy(letters, letters_not, letters_inc_pos, state, words_lst, lette
         poss_words = filter_lines
     # print("final poss words are {}", len(poss_words))
     # print(poss_words)
-    poss_words = sort_words(poss_words, words_pair_dict)
+    poss_words = sort_words(poss_words, words_pair_dict) #poss_words are sorted on their q value in desc where the negative of the q_value of word is stored in words_pair_dict 
     prob = random.uniform(0, 1)
     index = 0
     if prob < 0.2 and len(poss_words) > 1:
