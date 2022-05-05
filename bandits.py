@@ -3,6 +3,7 @@ import random
 import numpy as np
 import argparse
 
+epsilon = 0.2
 def sort_words(poss_words, words_pair_dict):
     words_pair_list = []
     for word in poss_words:
@@ -78,7 +79,7 @@ def bandit_policy(letters, letters_not, letters_inc_pos, state, words_lst, lette
     poss_words = sort_words(poss_words, words_pair_dict) #poss_words are sorted on their q value in desc where the negative of the q_value of word is stored in words_pair_dict 
     prob = random.uniform(0, 1)
     index = 0
-    if prob < 0.2 and len(poss_words) > 1:
+    if prob < epsilon and len(poss_words) > 1:
         index  = random.randint(0, len(poss_words)-1)
     # print("index is "+str(index))
     words_lst = poss_words
