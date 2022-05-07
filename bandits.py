@@ -121,7 +121,7 @@ def cleanup(letters, letters_not, letters_inc_pos, state, dest_word, letters_dic
             letters_rep_not.append((l,i))
     letters_not = list( dict.fromkeys(letters_not) )
     letters_inc_pos = list( dict.fromkeys(letters_inc_pos) )
-    return (letters, letters_not, letters_inc_pos, letters_dict)
+    return (letters, letters_not, letters_inc_pos, letters_dict, letters_rep_not)
 
 
 parser = argparse.ArgumentParser()
@@ -157,7 +157,7 @@ for i in range(6):
     if(i!=0):
         state, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, state, words_lst, letters_dict, letters_rep_not, words_pair_dict)
     print("on chance "+str(i+1)+" STATE is "+state)
-    (letters, letters_not, letters_inc_pos, letters_dict) = cleanup(letters, letters_not, letters_inc_pos, state, dest_word, letters_dict, letters_rep_not)
+    (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = cleanup(letters, letters_not, letters_inc_pos, state, dest_word, letters_dict, letters_rep_not)
     if(len(letters) == 5):
         break
     if(i==5):
