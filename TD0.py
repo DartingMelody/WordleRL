@@ -251,7 +251,7 @@ else:
     iterations = 2
 for it in range(iterations):
     solver = []
-    with open('/Users/tarannumkhan/Desktop/WordleRL/smallset.txt', 'r') as f:
+    with open('/Users/tarannumkhan/Desktop/WordleRL/wordspace.txt', 'r') as f:
         Lines = f.readlines()
     if test == True:
         Lines = []
@@ -260,7 +260,7 @@ for it in range(iterations):
     for dest_word in Lines: #in each episode
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/smallset1.txt', 'r') as f:
+        with open('/Users/tarannumkhan/Desktop/WordleRL/wordspace1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -300,7 +300,7 @@ for it in range(iterations):
             elif action not in state_to_actions[states[i]]:
                 state_to_actions[states[i]].append(action)
             next_state = state_concat(letters, letters_not, letters_inc_pos, letters_rep_not)
-            print("next state is ", next_state)
+            # print("next state is ", next_state)
             if policy == "Sarsa":
                 next_action = get_action(words_lst, pi, next_state, Q, state_to_actions)
             elif "Qlearning":
