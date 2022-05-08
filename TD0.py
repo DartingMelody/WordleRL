@@ -5,6 +5,7 @@ import argparse
 
 epsilon = 0.2
 gamma = 0.9
+alpha = 0.9
 def sort_words(poss_words, words_pair_dict):
     words_pair_list = []
     for word in poss_words:
@@ -86,30 +87,46 @@ def wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_d
     words_lst = poss_words
     return words_lst
 
-def get_greedy_action(words_lst, pi, state):
-    # print("words are "+words_lst)
-    if(state in pi): # and pi[state] in word_lst):
-        # print("IN PI STATE AND ACTION IS "+state+" , "+ pi[state])
-        return pi[state]
-    else:
+def get_action(words_lst, pi, state, Q, state_to_actions):
+    max_Q = 0
+    pi[state] = words_lst[0]
+    if state in state_to_actions:
+        for action in state_to_actions[state]:
+            if(Q[(state, action)] > max_Q):
+                max_Q = Q[(state, action)]
+                pi[state] = action
+            elif(Q[(state, action)] == max_Q):
+                max_Q = Q[(state, action)]
+                index = 0
+                if (len(state_to_actions[state]) > 1):
+                    index  = random.randint(0, len(state_to_actions[state])-1)
+                pi[state] = state_to_actions[state][index]
+    prob = random.uniform(0, 1)
+    if prob < epsilon and len(words_lst) > 1:
+        index  = random.randint(0, len(words_lst)-1)
+        pi[state] = words_lst[index]
+    return pi[state]
+
+def get_greedy_action(words_lst, pi, state, Q, state_to_actions):
+    if(state not in state_to_actions):
         index = 0
         prob = random.uniform(0, 1)
         if prob < epsilon and len(words_lst) > 1:
             index  = random.randint(0, len(words_lst)-1)
-        return words_lst[index]
-
-def get_action(words_lst, pi, state):
-    # print("words are "+words_lst)
-    index = 0
-    action = words_lst[index]
-    if(state in pi): # and pi[state] in word_lst):
-        # print("IN PI STATE AND ACTION IS "+state+" , "+ pi[state])
-        action = pi[state]
-    prob = random.uniform(0, 1)
-    if prob < epsilon and len(words_lst) > 1:
-        index  = random.randint(0, len(words_lst)-1)
-        action = words_lst[index]
-    return action
+            return words_lst[index]
+    if state in state_to_actions:
+        max_Q = 0
+        for action in state_to_actions[state]:
+            if(Q[(state, action)] > max_Q):
+                max_Q = Q[(state, action)]
+                greedy_action = action
+            elif(Q[(state, action)] == max_Q):
+                max_Q = Q[(state, action)]
+                index = 0
+                if len(state_to_actions[state]) > 1:
+                    index  = random.randint(0, len(state_to_actions[state])-1)
+                greedy_action = state_to_actions[state][index]
+        return greedy_action
 
 def get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc):
     letters = []
@@ -154,7 +171,6 @@ def get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, let
     letters_inc_pos = list( dict.fromkeys(letters_inc_pos) )
     reward = reward - old_reward
     return (letters, letters_not, letters_inc_pos, letters_dict, letters_rep_not, reward, rewardc)
-
 
 def get_next_state1(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not):
     letters = []
@@ -215,9 +231,10 @@ def state_concat(letters, letters_not, letters_inc_pos, letters_rep_not):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--word', '-w', required=False, type=str)
+parser.add_argument('--policy', '-p', choices=['Sarsa', 'Qlearning', 'ExpectedSarsa'], required=True, type=str)
 args = parser.parse_args()
 dest_word = args.word
-
+policy = args.policy
 test = False
 
 if dest_word:
@@ -249,7 +266,6 @@ for it in range(iterations):
         words_pair_dict = {}
         for line in Linesf:
             words_lst.append(line.split()[0])
-            # print(line.split()[1])
             words_pair_dict[line.split()[0]] = int(line.split()[1])
         letters = []
         letters_not = []
@@ -258,18 +274,18 @@ for it in range(iterations):
         letters_rep_not = []
         reward = 0
         rewardc = 0
-        states = [] #concatenation of all states. 
+        states = []
         actions = []
         rewards = []
         i = 0
         while(len(letters)!=5):
             states.append(state_concat(letters, letters_not, letters_inc_pos, letters_rep_not))
             if(i!=0):
-                words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
-                action = get_action(words_lst, pi, states[i])
+                action = get_action(words_lst, pi, states[i], Q, state_to_actions)
             print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
             # (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
+            words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
             actions.append(action)
             # print("letters are ", letters)
             # print("letters incorrect pos are ", letters_inc_pos)
@@ -283,34 +299,36 @@ for it in range(iterations):
                 state_to_actions[states[i]].append(action)
             elif action not in state_to_actions[states[i]]:
                 state_to_actions[states[i]].append(action)
+            next_state = state_concat(letters, letters_not, letters_inc_pos, letters_rep_not)
+            print("next state is ", next_state)
+            if policy == "Sarsa":
+                next_action = get_action(words_lst, pi, next_state, Q, state_to_actions)
+            elif "Qlearning":
+                next_action = get_greedy_action(words_lst, pi, next_state, Q, state_to_actions)
+            if((states[i], actions[i]) not in Q):
+                Q[(states[i], actions[i])] = 0
+            if((next_state, next_action) not in Q):
+                Q[(next_state, next_action)] = 0
+            if policy == "ExpectedSarsa":
+                Q_sum = 0
+                n = 0 
+                Q_avg = 0
+                if next_state in state_to_actions:
+                    for action in state_to_actions[next_state]:
+                        Q_sum = Q_sum + Q[(next_state, action)]
+                        n = n + 1
+                    Q_avg = Q_sum/n
+                Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q_avg - Q[(states[i], actions[i])])
+            else:     #for Qlearning and Sarsa
+                Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q[(next_state, next_action)] - Q[(states[i], actions[i])])
             if(len(letters) == 5):
                 solver.append(i+1)
                 rewards[-1] = 25
+                Q[(states[i], actions[i])] = 0
                 break
             if(i==5):
-                # rewards[-1] = -25
                 not_predict = not_predict + 1
+                # Q[(states[i], actions[i])] = 0
             i = i + 1
-        t = len(rewards) - 2
-        G = 0
-        Q[(states[t+1], actions[t+1])] = 0 #terminal state t
-        while(t>=0):
-            G = (gamma * G) + rewards[t]
-            if ((states[t], actions[t]) not in retun):
-                retun[(states[t], actions[t])] = []
-            retun[(states[t], actions[t])].append(G)
-            Q[(states[t], actions[t])] = sum(retun[(states[t], actions[t])]) / len(retun[(states[t], actions[t])])
-            max_Q = 0
-            for action in state_to_actions[states[t]]:
-                if(Q[(states[t], action)] > max_Q):
-                    max_Q = Q[(states[t], action)]
-                    pi[states[t]] = action
-                elif(Q[(states[t], action)] == max_Q):
-                    max_Q = Q[(states[t], action)]
-                    index = 0
-                    if len(state_to_actions[states[t]]) > 1:
-                        index  = random.randint(0, len(state_to_actions[states[t]])-1)
-                    pi[states[t]] = state_to_actions[states[t]][index]
-            t=t-1
     print("not predicted "+str(not_predict))
     print("avg solve chances " + str(sum(solver)/len(solver)))
