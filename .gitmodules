@@ -1,0 +1,3 @@
+[submodule "gym-wordle"]
+	path = gym-wordle
+	url = https://github.com/DivyanshuSaxena/gym-wordle.git
