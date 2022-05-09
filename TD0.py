@@ -2,6 +2,7 @@ import fnmatch
 import random
 import numpy as np
 import argparse
+import math
 
 epsilon = 0.2
 gamma = 0.9
@@ -229,38 +230,94 @@ def state_concat(letters, letters_not, letters_inc_pos, letters_rep_not):
     return state
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--word', '-w', required=False, type=str)
-parser.add_argument('--policy', '-p', choices=['Sarsa', 'Qlearning', 'ExpectedSarsa'], required=True, type=str)
-args = parser.parse_args()
-dest_word = args.word
-policy = args.policy
-test = False
+def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, policy):
+    for it in range(iterations):
+        solver = []
+        not_predict = 0
+        for dest_word in Lines: #in each episode
+            print("DEST WORD is "+dest_word)
+            action = 'stare'
+            with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+                Linesf = f.readlines()
+            words_lst = []
+            words_pair_dict = {}
+            for line in Linesf:
+                words_lst.append(line.split()[0])
+                words_pair_dict[line.split()[0]] = int(line.split()[1])
+            letters = []
+            letters_not = []
+            letters_inc_pos =[]
+            letters_dict = {}
+            letters_rep_not = []
+            reward = 0
+            rewardc = 0
+            states = []
+            actions = []
+            rewards = []
+            i = 0
+            while(len(letters)!=5):
+                states.append(state_concat(letters, letters_not, letters_inc_pos, letters_rep_not))
+                if(i!=0):
+                    action = get_action(words_lst, pi, states[i], Q, state_to_actions)
+                print("on chance "+str(i+1)+" ACTION is "+action)
+                (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
+                # (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
+                words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+                actions.append(action)
+                # print("letters are ", letters)
+                # print("letters incorrect pos are ", letters_inc_pos)
+                # print("incorrect letters are ", letters_not)
+                # print("incorrect letters rep are ", letters_rep_not)
+                # print("state i is "+states[i])
+                # print("action is "+action)
+                rewards.append(reward)
+                if(states[i] not in state_to_actions):
+                    state_to_actions[states[i]] = []
+                    state_to_actions[states[i]].append(action)
+                elif action not in state_to_actions[states[i]]:
+                    state_to_actions[states[i]].append(action)
+                next_state = state_concat(letters, letters_not, letters_inc_pos, letters_rep_not)
+                # print("next state is ", next_state)
+                if policy == "Sarsa":
+                    next_action = get_action(words_lst, pi, next_state, Q, state_to_actions)
+                elif "Qlearning":
+                    next_action = get_greedy_action(words_lst, pi, next_state, Q, state_to_actions)
+                if((states[i], actions[i]) not in Q):
+                    Q[(states[i], actions[i])] = 0
+                if((next_state, next_action) not in Q):
+                    Q[(next_state, next_action)] = 0
+                if policy == "ExpectedSarsa":
+                    Q_sum = 0
+                    n = 0 
+                    Q_avg = 0
+                    if next_state in state_to_actions:
+                        for action in state_to_actions[next_state]:
+                            Q_sum = Q_sum + Q[(next_state, action)]
+                            n = n + 1
+                        Q_avg = Q_sum/n
+                    Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q_avg - Q[(states[i], actions[i])])
+                else:     #for Qlearning and Sarsa
+                    Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q[(next_state, next_action)] - Q[(states[i], actions[i])])
+                if(len(letters) == 5):
+                    solver.append(i+1)
+                    rewards[-1] = 25
+                    Q[(states[i], actions[i])] = 0
+                    break
+                if(i==5):
+                    not_predict = not_predict + 1
+                    # Q[(states[i], actions[i])] = 0
+                i = i + 1
+        print("not predicted "+str(not_predict))
+        print("avg solve chances " + str(sum(solver)/len(solver)))
+    return (returns,retun, Q, state_to_actions, pi)
 
-if dest_word:
-    test = True
-
-returns = []
-retun = {}
-Q = {}
-state_to_actions = {}
-pi = {}
-if test == True:
-    iterations = 1
-else:
-    iterations = 2
-for it in range(iterations):
+def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, policy):
     solver = []
-    with open('/Users/tarannumkhan/Desktop/WordleRL/wordspace.txt', 'r') as f:
-        Lines = f.readlines()
-    if test == True:
-        Lines = []
-        Lines.append(dest_word)
     not_predict = 0
     for dest_word in Lines: #in each episode
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/wordspace1.txt', 'r') as f:
+        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -294,33 +351,6 @@ for it in range(iterations):
             # print("state i is "+states[i])
             # print("action is "+action)
             rewards.append(reward)
-            if(states[i] not in state_to_actions):
-                state_to_actions[states[i]] = []
-                state_to_actions[states[i]].append(action)
-            elif action not in state_to_actions[states[i]]:
-                state_to_actions[states[i]].append(action)
-            next_state = state_concat(letters, letters_not, letters_inc_pos, letters_rep_not)
-            # print("next state is ", next_state)
-            if policy == "Sarsa":
-                next_action = get_action(words_lst, pi, next_state, Q, state_to_actions)
-            elif "Qlearning":
-                next_action = get_greedy_action(words_lst, pi, next_state, Q, state_to_actions)
-            if((states[i], actions[i]) not in Q):
-                Q[(states[i], actions[i])] = 0
-            if((next_state, next_action) not in Q):
-                Q[(next_state, next_action)] = 0
-            if policy == "ExpectedSarsa":
-                Q_sum = 0
-                n = 0 
-                Q_avg = 0
-                if next_state in state_to_actions:
-                    for action in state_to_actions[next_state]:
-                        Q_sum = Q_sum + Q[(next_state, action)]
-                        n = n + 1
-                    Q_avg = Q_sum/n
-                Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q_avg - Q[(states[i], actions[i])])
-            else:     #for Qlearning and Sarsa
-                Q[(states[i], actions[i])] = Q[(states[i], actions[i])] + alpha*(reward + gamma*Q[(next_state, next_action)] - Q[(states[i], actions[i])])
             if(len(letters) == 5):
                 solver.append(i+1)
                 rewards[-1] = 25
@@ -332,3 +362,35 @@ for it in range(iterations):
             i = i + 1
     print("not predicted "+str(not_predict))
     print("avg solve chances " + str(sum(solver)/len(solver)))
+    return (returns,retun, Q, state_to_actions, pi)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--word', '-w', required=False, type=str)
+    parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
+    parser.add_argument('--policy', '-p', choices=['Sarsa', 'Qlearning', 'ExpectedSarsa'], required=False, type=str, default='Qlearning')
+    args = parser.parse_args()
+    dest_word = args.word
+    dataset = args.dataset
+    policy = args.policy
+    returns = []
+    retun = {}
+    Q = {}
+    state_to_actions = {}
+    pi = {}
+    iterations = 2
+    play = False
+    with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset +'.txt', 'r') as f:
+        Lines = f.readlines()
+        random.shuffle(Lines)
+    split_n = math.ceil(0.8 * len(Lines))
+    (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset, policy)
+    if dest_word:
+        play = True
+    if play == False:
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset, policy)
+    else:
+        Lines = []
+        Lines.append(dest_word)
+        print("playing")
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset, policy)

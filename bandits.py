@@ -2,6 +2,7 @@ import fnmatch
 import random
 import numpy as np
 import argparse
+import math
 
 epsilon = 0.2
 def sort_words(poss_words, words_pair_dict):
@@ -124,54 +125,109 @@ def get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, let
     return (letters, letters_not, letters_inc_pos, letters_dict, letters_rep_not)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--word', '-w', required=False, type=str)
-args = parser.parse_args()
-dest_word = args.word
-test = False
+def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
+    solver = []
+    not_predict = 0
+    for dest_word in Lines:
+        print("DEST WORD is "+dest_word)
+        action = 'stare'
+        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+            Linesf = f.readlines()
+        words_lst = []
+        words_pair_dict = {}
+        for line in Linesf:
+            words_lst.append(line.split()[0])
+            # print(line.split()[1])
+            words_pair_dict[line.split()[0]] = int(line.split()[1])
+        letters = []
+        letters_not = []
+        letters_inc_pos =[]
+        letters_dict = {}
+        letters_rep_not = []
+        i = 0
+        while(len(letters)!=5):
+            # print("letters are ", letters)
+            # print("letters incorrect pos are ", letters_inc_pos)
+            # print("incorrect letters are ", letters_not)
+            # print("incorrect letters rep are ", letters_rep_not)
+            if(i!=0):
+                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+            print("on chance "+str(i+1)+" ACTION is "+action)
+            (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
+            if(len(letters) == 5):
+                solver.append(i+1)
+                break
+            if(i==5):
+                not_predict = not_predict + 1
+            i = i + 1
+    print("avg solve chances " + str(sum(solver)/len(solver)))
+    print("not predicted "+str(not_predict))
+    return (returns,retun, Q, state_to_actions, pi)
 
-if dest_word:
-    test = True
+def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
+    solver = []
+    not_predict = 0
+    for dest_word in Lines:
+        print("DEST WORD is "+dest_word)
+        action = 'stare'
+        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+            Linesf = f.readlines()
+        words_lst = []
+        words_pair_dict = {}
+        for line in Linesf:
+            words_lst.append(line.split()[0])
+            # print(line.split()[1])
+            words_pair_dict[line.split()[0]] = int(line.split()[1])
+        letters = []
+        letters_not = []
+        letters_inc_pos =[]
+        letters_dict = {}
+        letters_rep_not = []
+        i = 0
+        while(len(letters)!=5):
+            # print("letters are ", letters)
+            # print("letters incorrect pos are ", letters_inc_pos)
+            # print("incorrect letters are ", letters_not)
+            # print("incorrect letters rep are ", letters_rep_not)
+            if(i!=0):
+                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+            print("on chance "+str(i+1)+" ACTION is "+action)
+            (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
+            if(len(letters) == 5):
+                solver.append(i+1)
+                break
+            if(i==5):
+                not_predict = not_predict + 1
+            i = i + 1
+    print("avg solve chances " + str(sum(solver)/len(solver)))
+    print("not predicted "+str(not_predict))
+    return (returns,retun, Q, state_to_actions, pi)
 
-solver = []
-with open('/Users/tarannumkhan/Desktop/WordleRL/smallset.txt', 'r') as f:
-	Lines = f.readlines()
-if test == True:
-    Lines = []
-    Lines.append(dest_word)
-not_predict = 0
-for dest_word in Lines:
-    print("DEST WORD is "+dest_word)
-    action = 'stare'
-
-    with open('/Users/tarannumkhan/Desktop/WordleRL/smallset1.txt', 'r') as f:
-        Linesf = f.readlines()
-    words_lst = []
-    words_pair_dict = {}
-    for line in Linesf:
-        words_lst.append(line.split()[0])
-        # print(line.split()[1])
-        words_pair_dict[line.split()[0]] = int(line.split()[1])
-    letters = []
-    letters_not = []
-    letters_inc_pos =[]
-    letters_dict = {}
-    letters_rep_not = []
-    i = 0
-    while(len(letters)!=5):
-        # print("letters are ", letters)
-        # print("letters incorrect pos are ", letters_inc_pos)
-        # print("incorrect letters are ", letters_not)
-        # print("incorrect letters rep are ", letters_rep_not)
-        if(i!=0):
-            action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
-        print("on chance "+str(i+1)+" ACTION is "+action)
-        (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
-        if(len(letters) == 5):
-            solver.append(i+1)
-            break
-        if(i==5):
-            not_predict = not_predict + 1
-        i = i + 1
-print("avg solve chances " + str(sum(solver)/len(solver)))
-print("not predicted "+str(not_predict))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--word', '-w', required=False, type=str)
+    parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
+    args = parser.parse_args()
+    dest_word = args.word
+    dataset = args.dataset
+    returns = []
+    retun = {}
+    Q = {}
+    state_to_actions = {}
+    pi = {}
+    iterations = 2
+    play = False
+    with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset +'.txt', 'r') as f:
+        Lines = f.readlines()
+        random.shuffle(Lines)
+    split_n = math.ceil(0.8 * len(Lines))
+    (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset)
+    if dest_word:
+        play = True
+    if play == False:
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset)
+    else:
+        Lines = []
+        Lines.append(dest_word)
+        print("playing")
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset)

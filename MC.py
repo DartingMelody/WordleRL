@@ -2,6 +2,7 @@ import fnmatch
 import random
 import numpy as np
 import argparse
+import math
 
 epsilon = 0.2
 gamma = 0.9
@@ -212,38 +213,94 @@ def state_concat(letters, letters_not, letters_inc_pos, letters_rep_not):
         state = state + l + str(i)
     return state
 
+def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
+    for it in range(iterations):
+        solver = []
+        not_predict = 0
+        for dest_word in Lines: #in each episode
+            print("DEST WORD is "+dest_word)
+            action = 'stare'
+            with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+                Linesf = f.readlines()
+            words_lst = []
+            words_pair_dict = {}
+            for line in Linesf:
+                words_lst.append(line.split()[0])
+                # print(line.split()[1])
+                words_pair_dict[line.split()[0]] = int(line.split()[1])
+            letters = []
+            letters_not = []
+            letters_inc_pos =[]
+            letters_dict = {}
+            letters_rep_not = []
+            reward = 0
+            rewardc = 0
+            states = [] #concatenation of all states. 
+            actions = []
+            rewards = []
+            i = 0
+            while(len(letters)!=5):
+                states.append(state_concat(letters, letters_not, letters_inc_pos, letters_rep_not))
+                if(i!=0):
+                    words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+                    action = get_action(words_lst, pi, states[i])
+                print("on chance "+str(i+1)+" ACTION is "+action)
+                (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
+                # (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
+                actions.append(action)
+                # print("letters are ", letters)
+                # print("letters incorrect pos are ", letters_inc_pos)
+                # print("incorrect letters are ", letters_not)
+                # print("incorrect letters rep are ", letters_rep_not)
+                # print("state i is "+states[i])
+                # print("action is "+action)
+                rewards.append(reward)
+                if(states[i] not in state_to_actions):
+                    state_to_actions[states[i]] = []
+                    state_to_actions[states[i]].append(action)
+                elif action not in state_to_actions[states[i]]:
+                    state_to_actions[states[i]].append(action)
+                if(len(letters) == 5):
+                    solver.append(i+1)
+                    rewards[-1] = 25
+                    break
+                if(i==5):
+                    # rewards[-1] = -25
+                    not_predict = not_predict + 1
+                i = i + 1
+            t = len(rewards) - 2
+            G = 0
+            Q[(states[t+1], actions[t+1])] = 0 #terminal state t
+            while(t>=0):
+                G = (gamma * G) + rewards[t]
+                if ((states[t], actions[t]) not in retun):
+                    retun[(states[t], actions[t])] = []
+                retun[(states[t], actions[t])].append(G)
+                Q[(states[t], actions[t])] = sum(retun[(states[t], actions[t])]) / len(retun[(states[t], actions[t])])
+                max_Q = 0
+                for action in state_to_actions[states[t]]:
+                    if(Q[(states[t], action)] > max_Q):
+                        max_Q = Q[(states[t], action)]
+                        pi[states[t]] = action
+                    elif(Q[(states[t], action)] == max_Q):
+                        max_Q = Q[(states[t], action)]
+                        index = 0
+                        if len(state_to_actions[states[t]]) > 1:
+                            index  = random.randint(0, len(state_to_actions[states[t]])-1)
+                        pi[states[t]] = state_to_actions[states[t]][index]
+                t=t-1
+        print("not predicted "+str(not_predict))
+        print("percentage not predicted "+str((not_predict/len(solver))*100))
+        print("avg solve chances " + str(sum(solver)/len(solver)))
+    return (returns,retun, Q, state_to_actions, pi)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--word', '-w', required=False, type=str)
-args = parser.parse_args()
-dest_word = args.word
-
-test = False
-
-if dest_word:
-    test = True
-
-returns = []
-retun = {}
-Q = {}
-state_to_actions = {}
-pi = {}
-if test == True:
-    iterations = 1
-else:
-    iterations = 2
-for it in range(iterations):
+def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
     solver = []
-    with open('/Users/tarannumkhan/Desktop/WordleRL/smallset.txt', 'r') as f:
-        Lines = f.readlines()
-    if test == True:
-        Lines = []
-        Lines.append(dest_word)
     not_predict = 0
     for dest_word in Lines: #in each episode
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/smallset1.txt', 'r') as f:
+        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -278,11 +335,6 @@ for it in range(iterations):
             # print("state i is "+states[i])
             # print("action is "+action)
             rewards.append(reward)
-            if(states[i] not in state_to_actions):
-                state_to_actions[states[i]] = []
-                state_to_actions[states[i]].append(action)
-            elif action not in state_to_actions[states[i]]:
-                state_to_actions[states[i]].append(action)
             if(len(letters) == 5):
                 solver.append(i+1)
                 rewards[-1] = 25
@@ -291,26 +343,38 @@ for it in range(iterations):
                 # rewards[-1] = -25
                 not_predict = not_predict + 1
             i = i + 1
-        t = len(rewards) - 2
-        G = 0
-        Q[(states[t+1], actions[t+1])] = 0 #terminal state t
-        while(t>=0):
-            G = (gamma * G) + rewards[t]
-            if ((states[t], actions[t]) not in retun):
-                retun[(states[t], actions[t])] = []
-            retun[(states[t], actions[t])].append(G)
-            Q[(states[t], actions[t])] = sum(retun[(states[t], actions[t])]) / len(retun[(states[t], actions[t])])
-            max_Q = 0
-            for action in state_to_actions[states[t]]:
-                if(Q[(states[t], action)] > max_Q):
-                    max_Q = Q[(states[t], action)]
-                    pi[states[t]] = action
-                elif(Q[(states[t], action)] == max_Q):
-                    max_Q = Q[(states[t], action)]
-                    index = 0
-                    if len(state_to_actions[states[t]]) > 1:
-                        index  = random.randint(0, len(state_to_actions[states[t]])-1)
-                    pi[states[t]] = state_to_actions[states[t]][index]
-            t=t-1
-    print("not predicted "+str(not_predict))
-    print("avg solve chances " + str(sum(solver)/len(solver)))
+        print("not predicted "+str(not_predict))
+        print("percentage not predicted "+str((not_predict/len(solver))*100))
+        print("avg solve chances " + str(sum(solver)/len(solver)))
+    return (returns,retun, Q, state_to_actions, pi)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--word', '-w', required=False, type=str)
+    parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
+    args = parser.parse_args()
+    dest_word = args.word
+    dataset = args.dataset
+    returns = []
+    retun = {}
+    Q = {}
+    state_to_actions = {}
+    pi = {}
+    iterations = 2
+    play = False
+    with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset +'.txt', 'r') as f:
+        Lines = f.readlines()
+        random.shuffle(Lines)
+    split_n = math.ceil(0.8 * len(Lines))
+    (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset)
+    if dest_word:
+        play = True
+    if play == False:
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset)
+    else:
+        Lines = []
+        Lines.append(dest_word)
+        print("playing")
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset)
+
