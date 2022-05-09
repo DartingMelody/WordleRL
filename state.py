@@ -78,6 +78,7 @@ def wordlist(letters, letters_not, letters_inc_pos, words_lst):
     # if prob < epsilon and len(poss_words) > 1:
     #     index  = random.randint(0, len(poss_words)-1)
     # print("index is "+str(index))
+    # print("final length of possible words {}", len(poss_words))
     return poss_words
 
 
@@ -113,6 +114,36 @@ class State():
         for i in word2action(word):
             self.state[i + 1] = 1
 
+    def from_obs(self, state, word, obs):
+        """Incorporate the information of last state and current observation
+
+        Args:
+            state: last state
+            word: currently guessed word
+            obs: observation received from OpenAI gym
+        """
+        self.copy_state(state.state)
+        for a in word:
+            self.state[ord(a) - 96] = 1
+
+        result = None
+        for w in obs['board']:
+            if -1 in w:
+                break
+            result = w
+        for pos in range(5):
+            letter = ord(word[pos]) - 97  # A -> 0, B -> 1, ....
+            letter_result = result[pos]
+            if letter_result == 0:
+                # The corresponding letter does not appear in the word
+                self.state[27 + letter] = 1
+            elif letter_result == 2:
+                # The corresponding letter is at the correct position in the word
+                self.state[53 + letter * 10 + pos * 2] = 1
+            else:
+                # The corresponding letter is at the incorrect position in the word
+                self.state[53 + letter * 10 + pos * 2 + 1] = 1
+
     def possible_actions(self):
         """
         Read the list of possible words, and list all possible next words from this state
@@ -137,11 +168,11 @@ class State():
                 start_index = 53 + i * 10
                 for pos in range(5):
                     # Check if present at pos
-                    if letters[start_index + pos * 3] == 1:
+                    if self.state[start_index + pos * 2] == 1:
                         letters.append((alphabet, pos))
                         continue
-                    if letters[start_index + pos * 3 + 1] == 1:
-                        letters_inc_pos((alphabet, pos))
+                    if self.state[start_index + pos * 2 + 1] == 1:
+                        letters_inc_pos.append((alphabet, pos))
 
         possible_next_words = wordlist(letters, letters_not, letters_inc_pos,
                                        WORDS)
@@ -153,13 +184,13 @@ class State():
             s_prime.state[0] -= 1
             for l in poss_word:
                 if l not in letters:
-                    s_prime.state[ord(l) - 96] = 1
+                    s_prime.state[1 + ord(l) - 97] = 1
             next_states.append(s_prime)
 
         return possible_next_words, next_states
 
 
-with open('wordspace.txt', 'r') as f:
+with open('smallset.txt', 'r') as f:
     lines = f.readlines()
 WORDS = []
 for line in lines:

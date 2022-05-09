@@ -54,7 +54,7 @@ def TDLambda(
 
     for e in range(num_episode):
         _ = env.reset()
-        next_word = "STARE"
+        next_word = "stare"
         s = State()
         s.from_word(next_word)
         done = False
@@ -62,8 +62,21 @@ def TDLambda(
         z = 0
         v_old = 0
         while True:
-            _, reward, done, _ = env.step(word2action(next_word))
-            next_word, s = epsilon_greedy_policy(s, done, w)
+            print(next_word)
+            # Perform action
+            obs, reward, done, _ = env.step(word2action(next_word))
+            # print(obs)
+
+            # Copy over state information and current observation
+            s_prime = State()
+            s_prime.copy_state(s)
+            s_prime.from_obs(s, next_word, obs)
+            s = s_prime
+
+            # Choose next action to perform
+            next_word, s_next = epsilon_greedy_policy(s, done, w)
+
+            # Update Logic
             x_prime = X(s, done)
             v = np.dot(w, x)
             v_prime = np.dot(w, x_prime)
@@ -72,16 +85,19 @@ def TDLambda(
             w += (alpha * (delta + v - v_old) * z - alpha * (v - v_old) * x)
             v_old = v_prime
             x = x_prime
+            s = s_next
 
             if done:
                 # Episode complete
                 if reward == 1:
                     success += 1
-                if e % 100 == 0:
+                if e % 100 == 0 and e != 0:
                     print('Completed episode ' + str(e))
+                    print("Successes: " + str(success) + "/" + str(e) + ": " +
+                          str(success / e))
                 break
 
-    print("Successes: " + str(success) + "/" + num_episode + ": " +
+    print("Successes: " + str(success) + "/" + str(num_episode) + ": " +
           str(success / num_episode))
 
     return w
