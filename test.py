@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--word', '-w', required=False, type=str)
     parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
-    parser.add_argument('--policy', '-p', choices=['MC', 'TD0', 'NstepSarsa', 'bandits', 'random', 'greedy'], required=False, type=str, default='MC')
+    parser.add_argument('--policy', '-p', choices=['MC', 'TD0', 'NstepSarsa', 'bandits', 'random', 'greedy', 'OnlineTDLambda', 'reinforce'], required=False, type=str, default='MC')
     parser.add_argument('--type', '-t', choices=['Sarsa', 'ExpectedSarsa', 'Qlearning'], required=False, type=str, default='Qlearning')
     args = parser.parse_args()
     epsilon = 0.2
