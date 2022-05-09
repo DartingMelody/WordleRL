@@ -308,6 +308,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, po
                     # Q[(states[i], actions[i])] = 0
                 i = i + 1
         print("not predicted "+str(not_predict))
+        print("percentage not predicted "+str((not_predict/len(solver))*100))
         print("avg solve chances " + str(sum(solver)/len(solver)))
     return (returns,retun, Q, state_to_actions, pi)
 
@@ -361,6 +362,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, policy):
                 # Q[(states[i], actions[i])] = 0
             i = i + 1
     print("not predicted "+str(not_predict))
+    print("percentage not predicted "+str((not_predict/len(solver))*100))
     print("avg solve chances " + str(sum(solver)/len(solver)))
     return (returns,retun, Q, state_to_actions, pi)
 

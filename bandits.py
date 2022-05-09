@@ -4,7 +4,6 @@ import numpy as np
 import argparse
 import math
 
-epsilon = 0.2
 def sort_words(poss_words, words_pair_dict):
     words_pair_list = []
     for word in poss_words:
@@ -15,7 +14,7 @@ def sort_words(poss_words, words_pair_dict):
         poss_words.append(word[0])
     return poss_words
 
-def bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict,letters_rep_not, words_pair_dict):
+def bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict,letters_rep_not, words_pair_dict, epsilon):
     action_w = "?????"
     for l in letters:
         action_w = action_w[:l[1]] + l[0] + action_w[l[1]+1:]
@@ -125,7 +124,7 @@ def get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, let
     return (letters, letters_not, letters_inc_pos, letters_dict, letters_rep_not)
 
 
-def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
+def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, epsilon):
     solver = []
     not_predict = 0
     for dest_word in Lines:
@@ -151,7 +150,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
             # print("incorrect letters are ", letters_not)
             # print("incorrect letters rep are ", letters_rep_not)
             if(i!=0):
-                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict, epsilon)
             print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
             if(len(letters) == 5):
@@ -161,10 +160,11 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                 not_predict = not_predict + 1
             i = i + 1
     print("avg solve chances " + str(sum(solver)/len(solver)))
+    print("percentage not predicted "+str((not_predict/len(solver))*100))
     print("not predicted "+str(not_predict))
     return (returns,retun, Q, state_to_actions, pi)
 
-def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
+def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, epsilon):
     solver = []
     not_predict = 0
     for dest_word in Lines:
@@ -190,7 +190,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
             # print("incorrect letters are ", letters_not)
             # print("incorrect letters rep are ", letters_rep_not)
             if(i!=0):
-                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+                action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict, epsilon)
             print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
             if(len(letters) == 5):
@@ -200,6 +200,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
                 not_predict = not_predict + 1
             i = i + 1
     print("avg solve chances " + str(sum(solver)/len(solver)))
+    print("percentage not predicted "+str((not_predict/len(solver))*100))
     print("not predicted "+str(not_predict))
     return (returns,retun, Q, state_to_actions, pi)
 
@@ -207,9 +208,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--word', '-w', required=False, type=str)
     parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
+    parser.add_argument('--epsilon', '-e', required=False, type=float, default='0.2')
     args = parser.parse_args()
     dest_word = args.word
     dataset = args.dataset
+    epsilon = args.epsilon
     returns = []
     retun = {}
     Q = {}
@@ -221,13 +224,13 @@ if __name__ == "__main__":
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))
-    (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset)
+    (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset, epsilon)
     if dest_word:
         play = True
     if play == False:
-        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset)
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset, epsilon)
     else:
         Lines = []
         Lines.append(dest_word)
         print("playing")
-        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset)
+        (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset, epsilon)

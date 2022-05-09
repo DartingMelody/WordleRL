@@ -298,6 +298,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                     break
                 t = t+1
         print("not predicted "+str(not_predict))
+        print("percentage not predicted "+str((not_predict/len(solver))*100))
         print("avg solve chances " + str(sum(solver)/len(solver)))
     return (returns,retun, Q, state_to_actions, pi)
 
