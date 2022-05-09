@@ -1,14 +1,16 @@
+import argparse
+import math
+from typing import Optional
 import gym
 import gym_wordle
 import numpy as np
-from state import WORDS, State, word2action
+from state import WORDS, State, load_words, word2action
 from gym_wordle.exceptions import InvalidWordException
 
 
 class ValueFeatureVector():
     def __init__(self, state_dims):
         self.state_len = state_dims
-        self.weights = np.random.rand(self.state_len) - 0.5
 
     def feature_vector_len(self) -> int:
         """
@@ -35,7 +37,9 @@ def TDLambda(
     alpha: float,  # step size
     X: ValueFeatureVector,
     num_episode: int,
-) -> np.array:
+    mode: int,  # whether running in train mode or test mode
+    user_word: Optional[str] = None,  # run for user provided word
+    weights: Optional[np.array] = None) -> np.array:
     """
     True online Sarsa(\lambda) with Value Function Approximation
     """
@@ -49,12 +53,16 @@ def TDLambda(
             choice = np.argmax(V)
         return next_words[choice], next_states[choice]
 
-    w = np.zeros((X.feature_vector_len()))
+    if weights is not None:
+        w = weights
+    else:
+        w = np.zeros((X.feature_vector_len()))
     success = 0
+    chances = []
 
     for e in range(num_episode):
         # Initialize before start of episode
-        _ = env.reset()
+        _ = env.reset(mode=mode, user_word=user_word)
 
         # Representation of initial state
         next_word = "stare"
@@ -65,10 +73,12 @@ def TDLambda(
         x = X(s, done)
         z = 0
         v_old = 0
+        chance = 0
         while True:
-            print(next_word)
             # Perform action
+            # print(next_word)
             obs, reward, done, _ = env.step(word2action(next_word))
+            chance += 1
             # print(obs)
 
             # Copy over state information and current observation
@@ -81,21 +91,27 @@ def TDLambda(
             next_word, s_next = epsilon_greedy_policy(s, done, w)
 
             # Update Logic
-            x_prime = X(s, done)
-            v = np.dot(w, x)
-            v_prime = np.dot(w, x_prime)
-            delta = reward + gamma * v_prime - v
-            z = gamma * lam * z + (1 - alpha * gamma * lam * np.dot(z, x)) * x
-            w += (alpha * (delta + v - v_old) * z - alpha * (v - v_old) * x)
-            v_old = v_prime
-            x = x_prime
+            if mode == 0:
+                # Under training
+                x_prime = X(s, done)
+                v = np.dot(w, x)
+                v_prime = np.dot(w, x_prime)
+                delta = reward + gamma * v_prime - v
+                z = gamma * lam * z + (1 -
+                                       alpha * gamma * lam * np.dot(z, x)) * x
+                w += (alpha * (delta + v - v_old) * z - alpha *
+                      (v - v_old) * x)
+                v_old = v_prime
+                x = x_prime
+
             s = s_next
 
             if done:
                 # Episode complete
+                chances.append(chance)
                 if reward == 1:
                     success += 1
-                if e % 100 == 0 and e != 0:
+                if e % 1000 == 0 and e != 0:
                     print('Completed episode ' + str(e))
                     print("Successes: " + str(success) + "/" + str(e) + ": " +
                           str(success / e))
@@ -103,11 +119,57 @@ def TDLambda(
 
     print("Successes: " + str(success) + "/" + str(num_episode) + ": " +
           str(success / num_episode))
+    print("not predicted " + str(num_episode - success))
+    print("percentage not predicted " + str(100 - success * 100 / num_episode))
+    print("avg solve chances: " + str(np.average(chances)))
 
     return w
 
 
-# Train on the entire dataset
-env = gym.make('Wordle-v0')
-s = State()
-TDLambda(env, 1., 0.8, 0.01, ValueFeatureVector(s.state_len), len(WORDS))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--word', '-w', required=False, type=str)
+    parser.add_argument('--dataset',
+                        '-dt',
+                        choices=['smallset', 'wordspace'],
+                        required=False,
+                        type=str,
+                        default='wordspace')
+    parser.add_argument('--epsilon',
+                        '-e',
+                        required=False,
+                        type=float,
+                        default='0.2')
+    args = parser.parse_args()
+
+    # Train on the entire dataset
+    load_words(args.dataset)
+    env = gym.make('Wordle-v0')
+    env.custom_file(args.dataset)
+    s = State()
+
+    # Train over 80% of the words
+    weights = TDLambda(env, 1., 0.8, 0.01, ValueFeatureVector(s.state_len),
+                       int(0.8 * len(WORDS)), 0)
+
+    if args.word:
+        # Test for the user word
+        TDLambda(env,
+                 1.,
+                 0.8,
+                 0.01,
+                 ValueFeatureVector(s.state_len),
+                 1,
+                 mode=1,
+                 user_word=args.word,
+                 weights=weights)
+    else:
+        # Test over 20% of the words
+        TDLambda(env,
+                 1.,
+                 0.8,
+                 0.01,
+                 ValueFeatureVector(s.state_len),
+                 int(0.2 * len(WORDS)),
+                 mode=1,
+                 weights=weights)

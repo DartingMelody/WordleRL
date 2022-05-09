@@ -1,6 +1,8 @@
 import fnmatch
 import numpy as np
 
+WORDS = []
+
 
 def word2action(word):
     action = []
@@ -190,8 +192,8 @@ class State():
         return possible_next_words, next_states
 
 
-with open('smallset.txt', 'r') as f:
-    lines = f.readlines()
-WORDS = []
-for line in lines:
-    WORDS.append(line.strip().split()[0])
+def load_words(filename):
+    with open(filename + '.txt', 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        WORDS.append(line.strip().split()[0])
