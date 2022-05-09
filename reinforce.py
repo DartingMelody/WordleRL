@@ -198,6 +198,7 @@ def REINFORCE(
 
             s = s_prime
             a = pi(s.state)
+            next_word = WORDS[a]
 
             if done:
                 # Episode complete
