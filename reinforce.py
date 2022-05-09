@@ -45,8 +45,6 @@ class PiApproximationWithNN():
         action_dims: the number of possible actions
         alpha: learning rate
         """
-        # TODO: implement here
-
         # Tips for TF users: You will need a function that collects the probability of action taken
         # actions; i.e. you need something like
         #
@@ -64,7 +62,6 @@ class PiApproximationWithNN():
                                           betas=(0.9, 0.999))
 
     def __call__(self, s) -> int:
-        # TODO: implement this method
         m = Categorical(self.eval_state(s).detach())
         a = m.sample().item()
         # print(a)
@@ -84,7 +81,6 @@ class PiApproximationWithNN():
         gamma_t: gamma^t
         delta: G-v(S_t,w)
         """
-        # TODO: implement this method
         # Compute the loss
         # if isinstance(G, float):
         #     G = torch.tensor([G])
@@ -118,7 +114,6 @@ class VApproximationWithNN(Baseline):
         state_dims: the number of dimensions of state space
         alpha: learning rate
         """
-        # TODO: implement here
         self.net = ValueNet(state_dims)
         self.optimizer = torch.optim.Adam(self.net.parameters(),
                                           lr=alpha,
@@ -126,7 +121,6 @@ class VApproximationWithNN(Baseline):
         self.loss_func = torch.nn.MSELoss()
 
     def __call__(self, s) -> float:
-        # TODO: implement this method
         return self.eval_state(s).detach().numpy()[0]
 
     def eval_state(self, s):
@@ -136,7 +130,6 @@ class VApproximationWithNN(Baseline):
         return v
 
     def update(self, s, G):
-        # TODO: implement this methodmethod
         # Compute the loss
         if isinstance(G, float):
             G = torch.tensor([G])
@@ -157,7 +150,7 @@ def REINFORCE(
         pi: PiApproximationWithNN,
         V: Baseline) -> Iterable[float]:
     """
-    implement REINFORCE algorithm with and without baseline.
+    implement REINFORCE algorithm with baseline.
 
     input:
         env: target environment; openai gym
@@ -165,10 +158,7 @@ def REINFORCE(
         num_episode: #episodes to iterate
         pi: policy
         V: baseline
-    output:
-        a list that includes the G_0 for every episodes.
     """
-    G0 = []
     success = 0
 
     for e in range(num_episodes):
@@ -222,6 +212,10 @@ def REINFORCE(
             pi.update(s_t.state, traj[t][1], math.pow(gamma, t), delta)
 
 
+    print("Successes: " + str(success) + "/" + str(e) + ": " +
+            str(success / e))
+
+
 # Train on entire dataset
 env = gym.make('Wordle-v0')
 s = State()
@@ -229,4 +223,4 @@ gamma = 1.
 alpha = 3e-4
 pi = PiApproximationWithNN(s.state_len, len(WORDS), alpha)
 B = VApproximationWithNN(s.state_len, alpha)
-REINFORCE(env, gamma, len(WORDS), pi, B)
+REINFORCE(env, gamma, 10 * len(WORDS), pi, B)
