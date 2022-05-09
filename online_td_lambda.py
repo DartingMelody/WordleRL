@@ -53,10 +53,14 @@ def TDLambda(
     success = 0
 
     for e in range(num_episode):
+        # Initialize before start of episode
         _ = env.reset()
+
+        # Representation of initial state
         next_word = "stare"
         s = State()
         s.from_word(next_word)
+
         done = False
         x = X(s, done)
         z = 0
