@@ -4,9 +4,11 @@ Wordle solver using RL
 
 This repository consists of RL algorithms for solving wordle. 
 
-Steps to run: 
+Steps to run:
+```
 git submodule update --init --recursive
 cd gym-wordle/ && pip install . && cd ..
+```
 These commands will set up the gym wordle environment. 
 For guessing any word through the RL algorithm, the command to run is:
 python test.py --policy MC --word midst (try any 5 letter word)
