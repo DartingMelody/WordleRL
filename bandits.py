@@ -130,7 +130,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, ep
     for dest_word in Lines:
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+        with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -170,7 +170,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, epsilon):
     for dest_word in Lines:
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+        with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     pi = {}
     iterations = 2
     play = False
-    with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset +'.txt', 'r') as f:
+    with open(dataset +'.txt', 'r') as f:
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))

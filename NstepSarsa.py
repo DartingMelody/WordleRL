@@ -6,7 +6,7 @@ import math
 
 epsilon = 0.2
 gamma = 0.9
-alpha = 0.9
+alpha = 0.1
 N = 3
 def sort_words(poss_words, words_pair_dict):
     words_pair_list = []
@@ -239,7 +239,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
         for dest_word in Lines: #in each episode
             print("DEST WORD is "+dest_word)
             action = 'stare'
-            with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1''.txt', 'r') as f:
+            with open(dataset+'1''.txt', 'r') as f:
                 Linesf = f.readlines()
             words_lst = []
             words_pair_dict = {}
@@ -308,7 +308,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
     for dest_word in Lines: #in each episode
         print("DEST WORD is "+dest_word)
         action = 'stare'
-        with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset+'1.txt', 'r') as f:
+        with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
         words_pair_dict = {}
@@ -350,9 +350,9 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
             if(i==5):
                 not_predict = not_predict + 1
             i = i + 1
-        print("not predicted "+str(not_predict))
-        print("percentage not predicted "+str((not_predict/len(solver))*100))
-        print("avg solve chances " + str(sum(solver)/len(solver)))
+    print("not predicted "+str(not_predict))
+    print("percentage not predicted "+str((not_predict/len(solver))*100))
+    print("avg solve chances " + str(sum(solver)/len(solver)))
     return (returns,retun, Q, state_to_actions, pi)
 
 
@@ -370,7 +370,7 @@ if __name__ == "__main__":
     pi = {}
     iterations = 2
     play = False
-    with open('/Users/tarannumkhan/Desktop/WordleRL/'+dataset +'.txt', 'r') as f:
+    with open(dataset +'.txt', 'r') as f:
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))
