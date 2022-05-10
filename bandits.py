@@ -1,5 +1,7 @@
 import fnmatch
 import random
+import sys
+import time
 import numpy as np
 import argparse
 import math
@@ -128,7 +130,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, ep
     solver = []
     not_predict = 0
     for dest_word in Lines:
-        print("DEST WORD is "+dest_word)
+        # print("DEST WORD is "+dest_word)
         action = 'stare'
         with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
@@ -151,7 +153,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset, ep
             # print("incorrect letters rep are ", letters_rep_not)
             if(i!=0):
                 action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict, epsilon)
-            print("on chance "+str(i+1)+" ACTION is "+action)
+            # print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
             if(len(letters) == 5):
                 solver.append(i+1)
@@ -168,7 +170,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, epsilon):
     solver = []
     not_predict = 0
     for dest_word in Lines:
-        print("DEST WORD is "+dest_word)
+        # print("DEST WORD is "+dest_word)
         action = 'stare'
         with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
@@ -191,7 +193,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset, epsilon):
             # print("incorrect letters rep are ", letters_rep_not)
             if(i!=0):
                 action, words_lst = bandit_policy(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict, epsilon)
-            print("on chance "+str(i+1)+" ACTION is "+action)
+            # print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
             if(len(letters) == 5):
                 solver.append(i+1)
@@ -224,7 +226,11 @@ if __name__ == "__main__":
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))
+    start = time.time()
     (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset, epsilon)
+    end = time.time()
+    print(end - start)
+    sys.exit(0)
     if dest_word:
         play = True
     if play == False:

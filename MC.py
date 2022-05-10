@@ -1,5 +1,7 @@
 import fnmatch
 import random
+import sys
+import time
 import numpy as np
 import argparse
 import math
@@ -218,7 +220,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
         solver = []
         not_predict = 0
         for dest_word in Lines: #in each episode
-            print("DEST WORD is "+dest_word)
+            # print("DEST WORD is "+dest_word)
             action = 'stare'
             with open(dataset+'1.txt', 'r') as f:
                 Linesf = f.readlines()
@@ -244,7 +246,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                 if(i!=0):
                     words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
                     action = get_action(words_lst, pi, states[i])
-                print("on chance "+str(i+1)+" ACTION is "+action)
+                # print("on chance "+str(i+1)+" ACTION is "+action)
                 (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
                 # (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
                 actions.append(action)
@@ -298,7 +300,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
     solver = []
     not_predict = 0
     for dest_word in Lines: #in each episode
-        print("DEST WORD is "+dest_word)
+        # print("DEST WORD is "+dest_word)
         action = 'stare'
         with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
@@ -324,7 +326,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
             if(i!=0):
                 words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
                 action = get_action(words_lst, pi, states[i])
-            print("on chance "+str(i+1)+" ACTION is "+action)
+            # print("on chance "+str(i+1)+" ACTION is "+action)
             (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
             # (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not)
             actions.append(action)
@@ -367,7 +369,11 @@ if __name__ == "__main__":
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))
+    start = time.time()
     (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset)
+    end = time.time()
+    print(end - start)
+    sys.exit(0)
     if dest_word:
         play = True
     if play == False:

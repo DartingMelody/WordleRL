@@ -1,5 +1,7 @@
 import argparse
 import math
+import sys
+import time
 from typing import Optional
 import gym
 import gym_wordle
@@ -149,8 +151,12 @@ if __name__ == "__main__":
     s = State()
 
     # Train over 80% of the words
+    start = time.time()
     weights = TDLambda(env, 0.8, 0.8, 0.01, ValueFeatureVector(s.state_len),
                        int(0.8 * len(WORDS)), 0)
+    end = time.time()
+    print(end - start)
+    sys.exit(0)
 
     if args.word:
         # Test for the user word
