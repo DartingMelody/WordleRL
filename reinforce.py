@@ -2,7 +2,7 @@ import argparse
 import gym
 import math
 import gym_wordle
-from typing import Iterable
+from typing import Iterable, Optional
 import numpy as np
 
 import torch
@@ -177,8 +177,8 @@ def REINFORCE(
         traj = []
         # Complete the episode
         while True:
-            print(next_word)
             # Perform action
+            # print(next_word)
             obs, reward, done, _ = env.step(word2action(next_word))
             # print(obs)
 
