@@ -16,3 +16,6 @@ python test.py --policy MC --word midst --type Sarsa
 where type can be [Sarsa, ExpectedSarsa, Qlearning]
 The default dataset is the larger one, for running the smaller dataset the command is:
 python test.py --policy MC --dataset smallset --word midst 
+
+For running on the test set, please dont specify the word argument. The command to run the training for larger dataset on Monte Carlo algorithm is:
+python test.py --policy MC --dataset smallset
