@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Khan"
+  given-names: "Tarannum"
+- family-names: "Saxena"
+  given-names: "Divyanshu"
+title: "WordleRL"
+version: 1.0.0
+date-released: 2022-05-09
+url: "https://github.com/DartingMelody/WordleRL"
