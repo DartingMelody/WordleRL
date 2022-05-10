@@ -7,6 +7,7 @@ import math
 epsilon = 0.2
 gamma = 0.9
 def sort_words(poss_words, words_pair_dict):
+    ##words sorted on the basis of ranks to be used for the epsilon greedy policy
     words_pair_list = []
     for word in poss_words:
         words_pair_list.append((word, words_pair_dict[word]))
@@ -18,10 +19,13 @@ def sort_words(poss_words, words_pair_dict):
 
 def wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict,letters_rep_not, words_pair_dict):
     action_w = "?????"
+    #create the letter like if if action is state -> action_w could be s??r?e depending on the correct letters stored in letters
     for l in letters:
         action_w = action_w[:l[1]] + l[0] + action_w[l[1]+1:]
+    #from the word list which is possible actions, words not matching action_w are removed.
     filter_lines = fnmatch.filter(words_lst, action_w)
     # print("matching state_w filter_lines are {}", len(filter_lines))
+    ##eliminating words which contains letters that are in letters_not list
     filter_list = []
     for word in filter_lines:
         should_add = True
@@ -32,6 +36,7 @@ def wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_d
         if should_add:
             filter_list.append(word)
     # print("after removing letters_not {}", len(filter_list))
+    ##eliminating letters that are at the positions in the letters_inc_pos list which consist letters in dest_word but at incorrect position
     filter_lines = []
     for word in filter_list:
         should_add = True
@@ -78,6 +83,7 @@ def wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_d
         poss_words = filter_lines
     # print("final poss words are {}", len(poss_words))
     # print(poss_words)
+    ##sorting possible words
     poss_words = sort_words(poss_words, words_pair_dict) #poss_words are sorted on their q value in desc where the negative of the q_value of word is stored in words_pair_dict 
     # prob = random.uniform(0, 1)
     # index = 0
@@ -85,7 +91,7 @@ def wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_d
     #     index  = random.randint(0, len(poss_words)-1)
     # print("index is "+str(index))
     words_lst = poss_words
-    return words_lst
+    return words_lst ##the updated word list after considering the current state to be used for selecting next action 
 
 def get_greedy_action(words_lst, pi, state):
     # print("words are "+words_lst)
@@ -158,6 +164,8 @@ def get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, let
 
 
 def get_next_state1(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not):
+    ##next state is updated once an action is taken where correct letters in the word, incorrect letters, correct letters at the 
+    ##wrong position and incorrect repeated letters are updated
     letters = []
     letters_not_temp = []
     letters_dict = {}
@@ -219,7 +227,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
         not_predict = 0
         for dest_word in Lines: #in each episode
             print("DEST WORD is "+dest_word)
-            action = 'stare'
+            action = 'stare' #starting word/action for each episode
             with open(dataset+'1.txt', 'r') as f:
                 Linesf = f.readlines()
             words_lst = []
@@ -228,11 +236,11 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                 words_lst.append(line.split()[0])
                 # print(line.split()[1])
                 words_pair_dict[line.split()[0]] = int(line.split()[1])
-            letters = []
-            letters_not = []
-            letters_inc_pos =[]
+            letters = [] #starting states for each episode
+            letters_not = [] #starting states for each episode
+            letters_inc_pos =[] #starting states for each episode
             letters_dict = {}
-            letters_rep_not = []
+            letters_rep_not = [] #starting states for each episode
             reward = 0
             rewardc = 0
             states = [] #concatenation of all states. 
@@ -240,9 +248,12 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
             rewards = []
             i = 0
             while(len(letters)!=5):
+                ##concatenate all states for creating an aggregate state having all the state information and directly using it
                 states.append(state_concat(letters, letters_not, letters_inc_pos, letters_rep_not))
                 if(i!=0):
+                    ##getting wordlist on the basis of current state
                     words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
+                    #getting action based on policy state and action 
                     action = get_action(words_lst, pi, states[i])
                 print("on chance "+str(i+1)+" ACTION is "+action)
                 (letters, letters_not, letters_inc_pos, letters_dict,letters_rep_not, reward, rewardc) = get_next_state(letters, letters_not, letters_inc_pos, action, dest_word, letters_dict, letters_rep_not, rewardc)
@@ -255,6 +266,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                 # print("state i is "+states[i])
                 # print("action is "+action)
                 rewards.append(reward)
+                #storing action corresponding to state
                 if(states[i] not in state_to_actions):
                     state_to_actions[states[i]] = []
                     state_to_actions[states[i]].append(action)
@@ -268,6 +280,7 @@ def train(returns,retun, Q, state_to_actions, pi, iterations, Lines, dataset):
                     # rewards[-1] = -25
                     not_predict = not_predict + 1
                 i = i + 1
+            ##MC policy as in sutton and barto book 
             t = len(rewards) - 2
             G = 0
             Q[(states[t+1], actions[t+1])] = 0 #terminal state t
@@ -299,7 +312,7 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
     not_predict = 0
     for dest_word in Lines: #in each episode
         print("DEST WORD is "+dest_word)
-        action = 'stare'
+        action = 'stare' #starting word/action for each episode
         with open(dataset+'1.txt', 'r') as f:
             Linesf = f.readlines()
         words_lst = []
@@ -308,11 +321,11 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
             words_lst.append(line.split()[0])
             # print(line.split()[1])
             words_pair_dict[line.split()[0]] = int(line.split()[1])
-        letters = []
-        letters_not = []
-        letters_inc_pos =[]
+        letters = [] #starting states for each episode
+        letters_not = [] #starting states for each episode
+        letters_inc_pos =[] #starting states for each episode
         letters_dict = {}
-        letters_rep_not = []
+        letters_rep_not = [] #starting states for each episode
         reward = 0
         rewardc = 0
         states = [] #concatenation of all states. 
@@ -320,8 +333,10 @@ def test(returns,retun, Q, state_to_actions, pi, Lines, dataset):
         rewards = []
         i = 0
         while(len(letters)!=5):
+            ##concatenate all states for creating an aggregate state having all the state information and directly using it
             states.append(state_concat(letters, letters_not, letters_inc_pos, letters_rep_not))
             if(i!=0):
+                ##getting wordlist on the basis of current state
                 words_lst = wordlist(letters, letters_not, letters_inc_pos, action, words_lst, letters_dict, letters_rep_not, words_pair_dict)
                 action = get_action(words_lst, pi, states[i])
             print("on chance "+str(i+1)+" ACTION is "+action)
@@ -357,24 +372,28 @@ if __name__ == "__main__":
     dest_word = args.word
     dataset = args.dataset
     returns = []
-    retun = {}
-    Q = {}
-    state_to_actions = {}
-    pi = {}
+    retun = {}  #storing return
+    Q = {} #storing Q for each state action  pair
+    state_to_actions = {} ##storing all actions corresponding to states
+    pi = {} #storing policy
     iterations = 2
     play = False
     with open(dataset +'.txt', 'r') as f:
         Lines = f.readlines()
         random.shuffle(Lines)
     split_n = math.ceil(0.8 * len(Lines))
+    ##traning on 80 percent of the dataset
     (returns,retun, Q, state_to_actions, pi) = train(returns,retun, Q, state_to_actions, pi, iterations, Lines[:int(split_n)], dataset)
     if dest_word:
+        ## if a word is provided by the user, then no need to test
         play = True
     if play == False:
+        ## if a word is not provided by the user, then print the result statistics for test set.
         (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines[int(split_n):], dataset)
     else:
         Lines = []
         Lines.append(dest_word)
         print("playing")
+        ##after training run for only that word
         (returns,retun, Q, state_to_actions, pi) = test(returns,retun, Q, state_to_actions, pi, Lines, dataset)
 

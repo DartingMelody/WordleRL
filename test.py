@@ -12,6 +12,7 @@ def subrun(com, capture_output=False):
 
 
 if __name__ == "__main__":
+    ## a common interface for all the algorithms to run by passing their respective parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--word', '-w', required=False, type=str)
     parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
