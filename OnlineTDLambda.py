@@ -109,12 +109,12 @@ def TDLambda(
             if done:
                 # Episode complete
                 chances.append(chance)
-                if reward == 1:
+                if reward == 25:
                     success += 1
                 if e % 1000 == 0 and e != 0:
                     print('Completed episode ' + str(e))
-                    print("Successes: " + str(success) + "/" + str(e) + ": " +
-                          str(success / e))
+                    print("Successes: " + str(success) + "/" + str(e + 1) +
+                          ": " + str(success / (e + 1)))
                 break
 
     print("Successes: " + str(success) + "/" + str(num_episode) + ": " +
