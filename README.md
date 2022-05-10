@@ -14,12 +14,12 @@ For guessing any word through the RL algorithm, the command to run is:
 ```
 python test.py --policy MC --word midst
 ```
-where policy can be selected from [MC, TD0, NstepSarsa, bandits, greedy, OnlineTDLambda] 
+where policy can be selected from [MC, TD0, NstepSarsa, bandits, greedy, OnlineTDLambda].
 For running Sarsa, expected Sarsa or Q learning, use the command:
 ```
 python test.py --policy MC --word midst --type Sarsa
 ```
-where type can be [Sarsa, ExpectedSarsa, Qlearning]
+where type can be [Sarsa, ExpectedSarsa, Qlearning].
 The default dataset is the larger one, for running the smaller dataset the command is:
 ```
 python test.py --policy MC --dataset smallset --word midst 
