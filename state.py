@@ -128,6 +128,8 @@ class State():
         for a in word:
             self.state[ord(a) - 96] = 1
 
+        self.state[0] -= 1
+
         result = None
         for w in obs['board']:
             if -1 in w:

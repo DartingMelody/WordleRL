@@ -1,3 +1,4 @@
+import argparse
 import gym
 import math
 import gym_wordle
@@ -7,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.distributions import Categorical
-from state import WORDS, State, word2action
+from state import WORDS, State, load_words, word2action
 
 import warnings
 
@@ -148,7 +149,9 @@ def REINFORCE(
         gamma: float,
         num_episodes: int,
         pi: PiApproximationWithNN,
-        V: Baseline) -> Iterable[float]:
+        V: Baseline,
+        mode: int,
+        user_word: Optional[str] = None) -> Iterable[float]:
     """
     implement REINFORCE algorithm with baseline.
 
@@ -163,7 +166,7 @@ def REINFORCE(
 
     for e in range(num_episodes):
         # Initialize before start of episode
-        _ = env.reset()
+        _ = env.reset(mode=mode, user_word=user_word)
 
         # Representation of initial state
         next_word = "stare"
@@ -192,7 +195,7 @@ def REINFORCE(
 
             if done:
                 # Episode complete
-                if reward == 1:
+                if reward == 25:
                     success += 1
                 if e % 100 == 0 and e != 0:
                     print('Completed episode ' + str(e))
@@ -200,27 +203,55 @@ def REINFORCE(
                           str(success / e))
                 break
 
-        T = len(traj)
-        for t in range(T - 1, -1, -1):
-            G = 0
-            for k in range(t + 1, T + 1):
-                G += math.pow(gamma, k - t - 1) * traj[k - 1][2]
+        if mode == 0:
+            T = len(traj)
+            for t in range(T - 1, -1, -1):
+                G = 0
+                for k in range(t + 1, T + 1):
+                    G += math.pow(gamma, k - t - 1) * traj[k - 1][2]
 
-            s_t = traj[t][0]
-            delta = G - V(s_t.state)
-            V.update(s_t.state, G)
-            pi.update(s_t.state, traj[t][1], math.pow(gamma, t), delta)
+                s_t = traj[t][0]
+                delta = G - V(s_t.state)
+                V.update(s_t.state, G)
+                pi.update(s_t.state, traj[t][1], math.pow(gamma, t), delta)
+
+    print("Successes: " + str(success) + "/" + str(num_episodes) + ": " +
+          str(success / num_episodes))
+    return V, pi
 
 
-    print("Successes: " + str(success) + "/" + str(e) + ": " +
-            str(success / e))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--word', '-w', required=False, type=str)
+    parser.add_argument('--dataset',
+                        '-dt',
+                        choices=['smallset', 'wordspace'],
+                        required=False,
+                        type=str,
+                        default='wordspace')
+    parser.add_argument('--epsilon',
+                        '-e',
+                        required=False,
+                        type=float,
+                        default='0.2')
+    args = parser.parse_args()
 
+    # Train on the entire dataset
+    load_words(args.dataset)
+    env = gym.make('Wordle-v0')
+    env.custom_file(args.dataset)
+    s = State()
 
-# Train on entire dataset
-env = gym.make('Wordle-v0')
-s = State()
-gamma = 1.
-alpha = 3e-4
-pi = PiApproximationWithNN(s.state_len, len(WORDS), alpha)
-B = VApproximationWithNN(s.state_len, alpha)
-REINFORCE(env, gamma, 10 * len(WORDS), pi, B)
+    gamma = 1.
+    alpha = 3e-4
+    pi = PiApproximationWithNN(s.state_len, len(WORDS), alpha)
+    B = VApproximationWithNN(s.state_len, alpha)
+
+    B, pi = REINFORCE(env, gamma, 10 * len(WORDS), pi, B, mode=0)
+
+    if args.word:
+        # Test for the user word
+        REINFORCE(env, gamma, 1, pi, B, mode=1, user_word=args.word)
+    else:
+        # Test over 20% of the words
+        REINFORCE(env, gamma, int(0.2 * len(WORDS)), pi, B, mode=1)

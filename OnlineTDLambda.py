@@ -149,13 +149,13 @@ if __name__ == "__main__":
     s = State()
 
     # Train over 80% of the words
-    weights = TDLambda(env, 1., 0.8, 0.01, ValueFeatureVector(s.state_len),
+    weights = TDLambda(env, 0.8, 0.8, 0.01, ValueFeatureVector(s.state_len),
                        int(0.8 * len(WORDS)), 0)
 
     if args.word:
         # Test for the user word
         TDLambda(env,
-                 1.,
+                 0.8,
                  0.8,
                  0.01,
                  ValueFeatureVector(s.state_len),
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     else:
         # Test over 20% of the words
         TDLambda(env,
-                 1.,
+                 0.8,
                  0.8,
                  0.01,
                  ValueFeatureVector(s.state_len),
