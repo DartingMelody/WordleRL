@@ -15,15 +15,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--word', '-w', required=False, type=str)
     parser.add_argument('--dataset', '-dt', choices=['smallset', 'wordspace'], required=False, type=str, default='wordspace')
-    parser.add_argument('--policy', '-p', choices=['MC', 'TD0', 'NstepSarsa', 'bandits', 'random', 'greedy', 'OnlineTDLambda', 'reinforce'], required=False, type=str, default='MC')
+    parser.add_argument('--policy', '-p', choices=['MC', 'TD0', 'NstepSarsa', 'bandits', 'greedy', 'OnlineTDLambda'], required=False, type=str, default='MC')
     parser.add_argument('--type', '-t', choices=['Sarsa', 'ExpectedSarsa', 'Qlearning'], required=False, type=str, default='Qlearning')
     args = parser.parse_args()
     epsilon = 0.2
-    if args.policy == 'random' or args.policy == 'greedy':
-        if args.policy == 'random':
-            epsilon = 1
-        else:
-            epsilon = 0
+    if args.policy == 'greedy':
+        epsilon = 0
         args.policy = 'bandits'
     run_command = "python "+args.policy+".py --dataset "+args.dataset
     if args.word:
